@@ -20,13 +20,13 @@ use Illuminate\Support\Facades\Route;
 
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
-
+Route::post('/forgot-password',[AuthController::class, 'forgotPassword']);
 
 Route::group(['middleware' => ['auth:sanctum']], function () {
 
     Route::post('/set-permission', [AuthController::class, 'setPermission']);
     Route::get('get-permission-list',[AuthController::class, 'getPermissionList']);
     Route::post('/assign-permission',[AuthController::class, 'assignPermission']);
-    Route::post('/update-password',[AuthController::class, 'updatePassword']);
+    Route::post('/update-password',[AuthController::class, 'updatePassword']);    
     Route::post('/logout', [AuthController::class, 'logout']);
 });

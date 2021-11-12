@@ -8,6 +8,8 @@ use App\Models\User;
 use App\Models\Permission;
 use App\Models\UserPermission;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Mail;
+use Nette\Utils\Random;
 use Symfony\Component\HttpFoundation\RateLimiter\RequestRateLimiterInterface;
 
 class AuthController extends Controller
@@ -80,8 +82,8 @@ class AuthController extends Controller
         $data = [
             "user_id" => Auth::id(),
             "email" => Auth::user()->email,
-            "role" => Auth::user()->role ,
-            "name" => Auth::user()->name ,
+            "role" => Auth::user()->role,
+            "name" => Auth::user()->name,
             "phone" => Auth::user()->phone,
             "permissions" => $permisson
 
@@ -235,6 +237,50 @@ class AuthController extends Controller
             return response()->json([
                 'status_code' => 400,
                 'message' => "Password not matched"
+            ]);
+        }
+    }
+
+
+    public function forgotPassword(Request $request)
+    {
+
+        $validator = Validator::make($request->all(), [
+            'email' => "required|email"
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(["status_code" => 400, "errors" => $validator->errors()]);
+        }
+
+
+        $user = User::where('email', $request->email)->first();
+
+        if ($user) {
+
+            $randomString = Rand(1111111, 9999999);
+            $data = ['name' => "arman", 'randomString' => $randomString];
+            $user['to'] = $request->email;
+            Mail::send('mails.forget-password-mail', ['data' => $data], function ($messages) use ($user, $data) {
+
+                $messages->to($user['to']);
+                $messages->subject('Reset Password for ReliSource HRMS');
+            });
+
+            $user = User::where('email', $request->email)->update(
+                [
+                    'password' => bcrypt($randomString)
+                ]
+            );
+
+            return response()->json([
+                'status_code' => 404,
+                'message' => "New password sent to your email"
+            ]);
+        } else {
+            return response()->json([
+                'status_code' => 404,
+                'message' => "Email address is not registered"
             ]);
         }
     }
