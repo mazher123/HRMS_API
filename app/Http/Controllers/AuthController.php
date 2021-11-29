@@ -23,13 +23,16 @@ class AuthController extends Controller
             "phone" => "required",
             "role" => "required",
             "email" => "required|email",
-            "password" => "required"
+            "password" => "required",
+            "permission_id" => "required"
 
         ]);
 
         if ($validator->fails()) {
             return response()->json(["status_code" => 400, "error" => $validator->errors()]);
         }
+
+        $permissions = $request->permission_id;
 
         $user = new User();
         $user->name = $request->name;
@@ -39,6 +42,21 @@ class AuthController extends Controller
         $user->password = bcrypt($request->password);
         $user->Save();
 
+
+        if ($permissions != null) {
+            foreach ($permissions as $permission) {
+                $user_permission = new  UserPermission();
+                $user_permission->user_id = $user->id;
+                $user_permission->permission_id = $permission;
+                $user_permission->Save();
+            }
+        } else {
+            return response()->json([
+                'status_code' => 404,
+                'message' => "No Permission has been given!"
+            ]);
+        }
+        
         return response()->json([
             'status_code' => 200,
             'message' => "user created successfully!"
@@ -85,6 +103,7 @@ class AuthController extends Controller
             "role" => Auth::user()->role,
             "name" => Auth::user()->name,
             "phone" => Auth::user()->phone,
+            'isBlocked' => 0,
             "permissions" => $permisson
 
         ];
@@ -214,7 +233,9 @@ class AuthController extends Controller
 
         $hashedPassword = Auth::user()->password;
 
-        if (\Hash::check($request->old_password, $hashedPassword && $request->confirm_password == $request->new_password)) {
+
+
+        if (\Hash::check($request->old_password, $hashedPassword)) {
 
             if (!\Hash::check($request->confirm_password, $hashedPassword)) {
 
@@ -274,7 +295,7 @@ class AuthController extends Controller
             );
 
             return response()->json([
-                'status_code' => 404,
+                'status_code' => 200,
                 'message' => "New password sent to your email"
             ]);
         } else {
